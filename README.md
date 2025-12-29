@@ -1,6 +1,6 @@
 # AWS EKS Platform
 
-[![CI Pipeline](https://github.com/YOUR_USERNAME/aws-eks-devops-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/aws-eks-devops-platform/actions/workflows/ci.yml)
+[![CI Pipeline](https://github.com/AnishKini007/aws-eks-devops-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AnishKini007/aws-eks-devops-platform/actions/workflows/ci.yml)
 [![Terraform](https://img.shields.io/badge/Terraform-v1.6+-623CE4?logo=terraform)](https://terraform.io)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.28+-326CE5?logo=kubernetes)](https://kubernetes.io)
 
@@ -172,7 +172,7 @@ aws-eks-devops-platform/
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/aws-eks-devops-platform.git
+git clone https://github.com/AnishKini007/aws-eks-devops-platform.git
 cd aws-eks-devops-platform
 ```
 
@@ -411,4 +411,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Your Name - your.email@example.com
 
-Project Link: [https://github.com/YOUR_USERNAME/aws-eks-devops-platform](https://github.com/YOUR_USERNAME/aws-eks-devops-platform)
+Project Link: [https://github.com/AnishKini007/aws-eks-devops-platform](https://github.com/AnishKini007/aws-eks-devops-platform)

@@ -17,7 +17,7 @@ spec:
       helm:
         valueFiles:
           - $values/helm/values/jenkins.yaml
-    - repoURL: https://github.com/YOUR_USERNAME/aws-eks-devops-platform.git
+    - repoURL: https://github.com/AnishKini007/aws-eks-devops-platform.git
       targetRevision: main
       ref: values
   destination:
