@@ -60,10 +60,8 @@ controller:
             local:
               allowsSignup: false
           authorizationStrategy:
-            globalMatrix:
-              permissions:
-                - "Overall/Administer:admin"
-                - "Overall/Read:authenticated"
+            loggedInUsersCanDoAnything:
+              allowAnonymousRead: false
       
       kubernetes-cloud: |
         jenkins:
@@ -123,6 +121,7 @@ controller:
     - configuration-as-code:latest
     - job-dsl:latest
     - docker-workflow:latest
+    - matrix-auth:latest
     - blueocean:latest
     - prometheus:latest
     - aws-credentials:latest
