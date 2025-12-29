@@ -50,11 +50,16 @@ grafana:
   datasources:
     datasources.yaml:
       apiVersion: 1
+      deleteDatasources:
+        - name: Prometheus
+          orgId: 1
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://prometheus-operated:9090
+          url: http://monitoring-kube-prometheus-prometheus:9090
+          access: proxy
           isDefault: true
+          editable: false
   
   dashboardProviders:
     dashboardproviders.yaml:

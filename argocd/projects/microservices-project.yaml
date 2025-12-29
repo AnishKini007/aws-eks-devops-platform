@@ -26,3 +26,5 @@ spec:
       kind: '*'
     - group: networking.k8s.io
       kind: '*'
+    - group: policy
+      kind: PodDisruptionBudget
