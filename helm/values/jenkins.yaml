@@ -8,6 +8,36 @@ controller:
   adminUser: admin
   # adminPassword: set via --set or secrets
   
+  # Startup probe - Jenkins takes time to initialize
+  startupProbe:
+    httpGet:
+      path: '/login'
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+    initialDelaySeconds: 120
+  
+  # Liveness probe
+  livenessProbe:
+    httpGet:
+      path: '/login'
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 5
+    initialDelaySeconds: 120
+  
+  # Readiness probe
+  readinessProbe:
+    httpGet:
+      path: '/login'
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    initialDelaySeconds: 120
+  
   resources:
     requests:
       cpu: 500m
