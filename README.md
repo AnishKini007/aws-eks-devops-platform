@@ -1,18 +1,21 @@
-# AWS EKS Platform
+# AWS EKS DevOps Platform
 
-[![CI Pipeline](https://github.com/AnishKini007/aws-eks-devops-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AnishKini007/aws-eks-devops-platform/actions/workflows/ci.yml)
 [![Terraform](https://img.shields.io/badge/Terraform-v1.6+-623CE4?logo=terraform)](https://terraform.io)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.28+-326CE5?logo=kubernetes)](https://kubernetes.io)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.29-326CE5?logo=kubernetes)](https://kubernetes.io)
+[![AWS](https://img.shields.io/badge/AWS-EKS-FF9900?logo=amazonaws)](https://aws.amazon.com/eks/)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)](https://python.org)
 
-> **Highly Available Microservices Platform on AWS EKS using Terraform & GitOps**
+> **Production-Grade Microservices Platform on AWS EKS using Terraform, GitOps & Jenkins CI/CD**
 
-A production-ready Kubernetes platform on AWS EKS featuring Infrastructure as Code, GitOps-based continuous deployment, comprehensive observability, and enterprise security patterns.
+A complete Kubernetes platform on AWS EKS featuring Infrastructure as Code, GitOps-based continuous deployment with ArgoCD, Jenkins CI/CD pipelines, comprehensive observability with Prometheus/Grafana, and enterprise security patterns.
+
+---
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              AWS Cloud                                       │
+│                              AWS Cloud (ap-south-1)                          │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
 │  │                         VPC (10.0.0.0/16)                              │  │
 │  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐        │  │
@@ -32,74 +35,63 @@ A production-ready Kubernetes platform on AWS EKS featuring Infrastructure as Co
 │  │  └─────────────────┘  └─────────────────┘  └─────────────────┘        │  │
 │  │                                                                        │  │
 │  │  ┌──────────────────────────────────────────────────────────────────┐ │  │
-│  │  │                    EKS Cluster (v1.28)                           │ │  │
+│  │  │                    EKS Cluster (v1.29)                           │ │  │
 │  │  │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐    │ │  │
-│  │  │  │  ArgoCD    │ │ Prometheus │ │  Grafana   │ │ ALB Ingress│    │ │  │
+│  │  │  │  ArgoCD    │ │  Jenkins   │ │ Prometheus │ │  Grafana   │    │ │  │
 │  │  │  └────────────┘ └────────────┘ └────────────┘ └────────────┘    │ │  │
 │  │  │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐    │ │  │
-│  │  │  │ User Svc   │ │ Order Svc  │ │ Product Svc│ │ API Gateway│    │ │  │
-│  │  │  │  (Node.js) │ │  (Python)  │ │  (Node.js) │ │            │    │ │  │
+│  │  │  │ User Svc   │ │ Order Svc  │ │Product Svc │ │ALB Ingress │    │ │  │
+│  │  │  │  (FastAPI) │ │  (FastAPI) │ │  (FastAPI) │ │ Controller │    │ │  │
 │  │  │  └────────────┘ └────────────┘ └────────────┘ └────────────┘    │ │  │
 │  │  └──────────────────────────────────────────────────────────────────┘ │  │
 │  │                                                                        │  │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │  │
-│  │  │    RDS      │  │     S3      │  │  Secrets    │  │ CloudWatch  │   │  │
-│  │  │ (PostgreSQL)│  │ (Artifacts) │  │  Manager    │  │   (Logs)    │   │  │
+│  │  │    RDS      │  │     S3      │  │    ECR      │  │  Secrets    │   │  │
+│  │  │(PostgreSQL) │  │ (Artifacts) │  │  (Images)   │  │  Manager    │   │  │
 │  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘   │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────┘
-
-                    │  ┌─────────────────────────────────────┐
-                    │         CI/CD Pipeline              │
-                    │  ┌─────────┐      ┌─────────────┐   │
-                    │  │ Jenkins │ ──── │   ArgoCD    │   │
-                    │  │  (CI)   │      │   (GitOps)  │   │
-                    │  └─────────┘      └─────────────┘   │
-                    │       │                  │          │
-                    │       ▼                  ▼          │
-                    │  ┌─────────┐      ┌─────────────┐   │
-                    │  │   ECR   │      │ Kubernetes  │   │
-                    │  │ (Images)│      │   Cluster   │   │
-                    │  └─────────┘      └─────────────┘   │
-                    │                                     │
-                    │  GitHub Actions (Backup CI)         │
-                    └─────────────────────────────────────┘
 ```
+
+---
 
 ## 🚀 Features
 
 ### Infrastructure (Terraform)
 - **Multi-AZ VPC** with public, private, and database subnets
-- **EKS Cluster** with managed node groups and autoscaling
-- **RDS PostgreSQL** with Multi-AZ deployment
-- **S3 Buckets** for artifacts and Terraform state
+- **EKS Cluster v1.29** with managed node groups and autoscaling
+- **RDS PostgreSQL 16.6** with Multi-AZ deployment
+- **S3 Buckets** for artifacts with lifecycle policies
+- **ECR Repositories** for container images
 - **IAM Roles for Service Accounts (IRSA)** for secure AWS access
 - **AWS Secrets Manager** integration
+- **EBS CSI Driver** for persistent storage
 
 ### Kubernetes Platform
-- **ALB Ingress Controller** for load balancing
+- **AWS ALB Ingress Controller** for load balancing
 - **Cluster Autoscaler** for dynamic node scaling
 - **Horizontal Pod Autoscaler (HPA)** for workload scaling
-- **External DNS** for automatic DNS management
-- **Cert Manager** for TLS certificate automation
+- **Network Policies** for traffic control
+- **Pod Disruption Budgets** for high availability
 
 ### CI/CD Pipeline
-- **Jenkins** (Primary) - CI pipelines running on Kubernetes agents
+- **Jenkins** (Primary) - CI pipelines with Kubernetes agents
 - **GitHub Actions** (Backup) - Automated workflows as fallback
-- **ArgoCD** for GitOps-based continuous deployment
-- **Automated image updates** with manifest commits
+- **ArgoCD** - GitOps-based continuous deployment
+- **Helm Charts** - Templated Kubernetes deployments
 
 ### Observability
 - **Prometheus** for metrics collection
 - **Grafana** with pre-configured dashboards
-- **CloudWatch** integration for centralized logging
 - **AlertManager** for alerting
+- **Node Exporter** for host metrics
 
-### Security
-- **Network Policies** for pod-to-pod traffic control
-- **Pod Security Standards** enforcement
-- **Secrets encryption** at rest
-- **Private ECR** for container images
+### Microservices (Python FastAPI)
+- **User Service** - User management and authentication
+- **Order Service** - Order processing
+- **Product Service** - Product catalog management
+
+---
 
 ## 📁 Project Structure
 
@@ -107,293 +99,387 @@ A production-ready Kubernetes platform on AWS EKS featuring Infrastructure as Co
 aws-eks-devops-platform/
 ├── terraform/                    # Infrastructure as Code
 │   ├── environments/
-│   │   ├── dev/
-│   │   ├── staging/
-│   │   └── prod/
+│   │   └── dev/                  # Dev environment configuration
 │   ├── modules/
-│   │   ├── vpc/
-│   │   ├── eks/
-│   │   ├── rds/
-│   │   ├── s3/
-│   │   └── iam/
+│   │   ├── vpc/                  # VPC with multi-AZ subnets
+│   │   ├── eks/                  # EKS cluster with node groups
+│   │   ├── rds/                  # PostgreSQL RDS instance
+│   │   ├── s3/                   # S3 buckets with policies
+│   │   └── iam/                  # IAM roles and policies
 │   └── backend.tf
 ├── kubernetes/                   # Kubernetes manifests
 │   ├── base/
 │   │   ├── namespaces/
 │   │   ├── network-policies/
 │   │   └── rbac/
-│   ├── apps/
-│   │   ├── user-service/
-│   │   ├── order-service/
-│   │   └── product-service/
-│   ├── platform/
-│   │   ├── ingress-controller/
-│   │   ├── cluster-autoscaler/
-│   │   ├── external-dns/
-│   │   └── cert-manager/
-│   └── monitoring/
-│       ├── prometheus/
-│       └── grafana/
+│   ├── apps/                     # Microservice deployments
+│   ├── platform/                 # Platform components
+│   └── monitoring/               # Prometheus & Grafana
 ├── argocd/                       # ArgoCD configurations
-│   ├── apps/
-│   └── projects/
+│   ├── apps/                     # Application definitions
+│   └── projects/                 # Project configurations
 ├── apps/                         # Microservices source code
-│   ├── user-service/
-│   ├── order-service/
-│   └── product-service/
-├── .github/
-│   └── workflows/
-│       ├── ci.yml               # Backup CI pipeline
-│       ├── terraform.yml        # Backup Terraform pipeline
-│       └── security-scan.yml
-├── jenkins/                      # Jenkins configurations
-│   ├── Jenkinsfile.terraform    # Terraform pipeline
-│   └── vars/                    # Shared library functions
+│   ├── user-service/             # FastAPI user service
+│   ├── order-service/            # FastAPI order service
+│   └── product-service/          # FastAPI product service
 ├── helm/                         # Helm charts and values
 │   ├── charts/
-│   │   └── microservice/        # Generic reusable chart
-│   └── values/                  # Service & platform values
-├── Jenkinsfile                   # Main CI pipeline
+│   │   └── microservice/         # Generic reusable chart
+│   └── values/                   # Service & platform values
+├── jenkins/                      # Jenkins configurations
+│   ├── Jenkinsfile.terraform
+│   └── vars/
+├── .github/workflows/            # GitHub Actions (backup CI)
 ├── scripts/                      # Utility scripts
-│   └── deploy.sh                # Helm deployment script
 └── docs/                         # Documentation
 ```
 
+---
+
 ## 🛠️ Prerequisites
 
-- AWS CLI v2 configured with appropriate permissions
-- Terraform >= 1.6
-- kubectl >= 1.28
-- Helm >= 3.12
-- Docker
-- ArgoCD CLI (optional)
+| Tool | Version | Purpose |
+|------|---------|---------|
+| AWS CLI | v2+ | AWS resource management |
+| Terraform | >= 1.6 | Infrastructure provisioning |
+| kubectl | >= 1.29 | Kubernetes management |
+| Helm | >= 3.12 | Package management |
+| Git | Latest | Version control |
 
-## 🚀 Quick Start
+### AWS Permissions Required
+- EC2, VPC, EKS (Full Access)
+- RDS, S3, ECR (Full Access)
+- IAM (Create Roles/Policies)
+- Secrets Manager
+- Elastic Load Balancing
 
-### 1. Clone the Repository
+---
+
+## 🚀 Deployment Guide
+
+### Step 1: Clone the Repository
 ```bash
 git clone https://github.com/AnishKini007/aws-eks-devops-platform.git
 cd aws-eks-devops-platform
 ```
 
-### 2. Configure AWS Credentials
-```bash
-aws configure
-# Or use environment variables (Linux/Mac)
-export AWS_ACCESS_KEY_ID="your-access-key"
-export AWS_SECRET_ACCESS_KEY="your-secret-key"
-export AWS_DEFAULT_REGION="ap-south-1"
-
+### Step 2: Configure AWS Credentials
+```powershell
 # Windows PowerShell
 $env:AWS_ACCESS_KEY_ID="your-access-key"
 $env:AWS_SECRET_ACCESS_KEY="your-secret-key"
 $env:AWS_DEFAULT_REGION="ap-south-1"
+
+# Or use AWS CLI
+aws configure
 ```
 
-### 3. Deploy Infrastructure
+### Step 3: Deploy Infrastructure with Terraform
 ```bash
 cd terraform/environments/dev
 terraform init
 terraform plan
-terraform apply
+terraform apply -auto-approve
 ```
 
-Save the outputs - you'll need the ECR URLs and IAM role ARNs.
-
-### 4. Configure kubectl
+### Step 4: Configure kubectl
 ```bash
 aws eks update-kubeconfig --name eks-platform-dev --region ap-south-1
-kubectl get nodes  # Verify connection
+kubectl get nodes
 ```
 
-### 5. Update Helm Values with Your AWS Account
-
-Update these files with your AWS account ID and region from Terraform outputs:
-- `helm/values/aws-load-balancer-controller.yaml` - Update `eks.amazonaws.com/role-arn`
-- `helm/values/cluster-autoscaler.yaml` - Update `eks.amazonaws.com/role-arn` and region
-- `helm/values/user-service.yaml` - Update ECR repository URL
-- `helm/values/order-service.yaml` - Update ECR repository URL
-- `helm/values/product-service.yaml` - Update ECR repository URL
-
-### 6. Build and Push Docker Images to ECR
-
+### Step 5: Install EBS CSI Driver
 ```bash
-# Get your AWS account ID
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-AWS_REGION="ap-south-1"
+# Get OIDC ID
+OIDC_ID=$(aws eks describe-cluster --name eks-platform-dev --region ap-south-1 \
+  --query "cluster.identity.oidc.issuer" --output text | sed 's|https://||')
 
-# Login to ECR
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+# Create IAM Role for EBS CSI
+aws iam create-role --role-name eks-platform-dev-ebs-csi-driver \
+  --assume-role-policy-document file://ebs-trust-policy.json
 
-# Build and push each service
-for service in user-service order-service product-service; do
-    cd apps/$service
-    docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/eks-platform/$service:latest .
-    docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/eks-platform/$service:latest
-    cd ../..
-done
+aws iam attach-role-policy --role-name eks-platform-dev-ebs-csi-driver \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+
+# Install EBS CSI Driver addon
+aws eks create-addon --cluster-name eks-platform-dev --addon-name aws-ebs-csi-driver \
+  --region ap-south-1 \
+  --service-account-role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/eks-platform-dev-ebs-csi-driver
 ```
 
-**Windows PowerShell:**
+### Step 6: Deploy ArgoCD
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Get ArgoCD admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
+
+### Step 7: Deploy Applications via ArgoCD
+```bash
+kubectl apply -f argocd/projects/
+kubectl apply -f argocd/apps/
+```
+
+---
+
+## 🔑 Access Credentials
+
+### Get Credentials
 ```powershell
-$AWS_ACCOUNT_ID = aws sts get-caller-identity --query Account --output text
-$AWS_REGION = "ap-south-1"
+# ArgoCD Password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | 
+  ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
 
-# Login to ECR
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+# Jenkins Password
+kubectl get secret -n jenkins jenkins -o jsonpath="{.data.jenkins-admin-password}" | 
+  ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
 
-# Build and push each service
-foreach ($service in @("user-service", "order-service", "product-service")) {
-    cd apps/$service
-    docker build -t "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/eks-platform/${service}:latest" .
-    docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/eks-platform/${service}:latest"
-    cd ../..
+# Grafana Password (default: admin123)
+kubectl get secret -n monitoring monitoring-grafana -o jsonpath="{.data.admin-password}" | 
+  ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
+```
+
+### Port Forwarding
+```bash
+# ArgoCD UI
+kubectl port-forward -n argocd svc/argocd-server 8081:443
+
+# Jenkins
+kubectl port-forward -n jenkins svc/jenkins 8080:8080
+
+# Grafana
+kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
+
+# Prometheus
+kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
+
+# Microservices
+kubectl port-forward -n microservices svc/user-service 8001:80
+kubectl port-forward -n microservices svc/order-service 8002:80
+kubectl port-forward -n microservices svc/product-service 8003:80
+```
+
+### Access URLs (via port-forward)
+| Service | URL | Username | Password |
+|---------|-----|----------|----------|
+| ArgoCD | https://localhost:8081 | admin | (from secret) |
+| Jenkins | http://localhost:8080 | admin | (from secret) |
+| Grafana | http://localhost:3000 | admin | admin123 |
+| Prometheus | http://localhost:9090 | - | - |
+| User Service | http://localhost:8001 | - | - |
+| Order Service | http://localhost:8002 | - | - |
+| Product Service | http://localhost:8003 | - | - |
+
+---
+
+## 🐛 Troubleshooting Guide
+
+### Issues Encountered & Solutions
+
+#### 1. EKS Version Jump Error
+**Error:** `Cannot upgrade more than one minor version at a time`
+
+**Solution:** EKS only allows upgrading one minor version at a time (e.g., 1.28 → 1.29, not 1.28 → 1.30)
+```hcl
+# terraform/environments/dev/main.tf
+cluster_version = "1.29"  # Not 1.30
+```
+
+#### 2. PostgreSQL Version Not Available
+**Error:** `InvalidParameterValue: Cannot find version 16.3 for postgres`
+
+**Solution:** Check available versions in your region and use an available one
+```bash
+aws rds describe-db-engine-versions --engine postgres --query 'DBEngineVersions[].EngineVersion' --region ap-south-1
+```
+```hcl
+# Use available version
+engine_version = "16.6"
+```
+
+#### 3. RDS Parameter Group Family Mismatch
+**Error:** `InvalidParameterCombination: RDS does not support creating a DB instance with the following combination: DBInstanceClass=db.t3.micro, Engine=postgres, EngineVersion=16.6, DBParameterGroupFamily=postgres15`
+
+**Solution:** Parameter group family must match engine version
+```hcl
+# terraform/modules/rds/main.tf
+resource "aws_db_parameter_group" "main" {
+  family = "postgres16"  # Match engine version 16.x
 }
 ```
 
-### 7. Deploy Platform Components
+#### 4. S3 Lifecycle Rule Filter Warning
+**Error:** `lifecycle rule filter must be set`
 
-**Windows PowerShell:**
-```powershell
-.\scripts\setup.ps1 all
+**Solution:** Add empty filter blocks to lifecycle rules
+```hcl
+lifecycle_rule {
+  id      = "cleanup"
+  enabled = true
+  filter {}  # Required even for "apply to all" rules
+  # ...
+}
 ```
 
-**Linux/Mac:**
+#### 5. EBS CSI Driver CrashLoopBackOff
+**Error:** `Could not assume role: WebIdentityErr: failed to retrieve credentials`
+
+**Solution:** Create proper IAM role with OIDC trust policy
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {
+      "Federated": "arn:aws:iam::ACCOUNT_ID:oidc-provider/oidc.eks.REGION.amazonaws.com/id/OIDC_ID"
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "oidc.eks.REGION.amazonaws.com/id/OIDC_ID:aud": "sts.amazonaws.com",
+        "oidc.eks.REGION.amazonaws.com/id/OIDC_ID:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+      }
+    }
+  }]
+}
+```
+
+#### 6. Grafana CrashLoopBackOff - Datasource Error
+**Error:** `Only one datasource per organization can be marked as default`
+
+**Solution:** Add deleteDatasources section to monitoring.yaml
+```yaml
+grafana:
+  deleteDatasources:
+    - name: Prometheus
+      orgId: 1
+  additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      url: http://monitoring-kube-prometheus-prometheus:9090
+      isDefault: true
+```
+
+#### 7. Jenkins CrashLoopBackOff - Configuration Error
+**Error:** `No hudson.security.AuthorizationStrategy implementation found for globalMatrix`
+
+**Solution:** Use built-in authorization strategy or add matrix-auth plugin
+```yaml
+# helm/values/jenkins.yaml
+JCasC:
+  configScripts:
+    security: |
+      jenkins:
+        authorizationStrategy:
+          loggedInUsersCanDoAnything:
+            allowAnonymousRead: false
+installPlugins:
+  - matrix-auth:latest  # If using globalMatrix
+```
+
+#### 8. ArgoCD Application Sync Failed - PodDisruptionBudget
+**Error:** `Resource policy/PodDisruptionBudget is not permitted in project`
+
+**Solution:** Add PDB to project's allowed resources
+```yaml
+# argocd/projects/microservices-project.yaml
+spec:
+  namespaceResourceWhitelist:
+    - group: 'policy'
+      kind: 'PodDisruptionBudget'
+```
+
+#### 9. Port Already in Use
+**Error:** `bind: Only one usage of each socket address`
+
+**Solution:** Use a different port
 ```bash
-chmod +x scripts/deploy.sh
-./scripts/deploy.sh all
+kubectl port-forward -n microservices svc/user-service 8001:80  # Use 8001 instead of 8000
 ```
 
-### 8. Verify Deployment
+#### 10. Region Permission Issues
+**Error:** `UnauthorizedOperation` or `AccessDenied` for certain resources
+
+**Solution:** Switch to a region where you have full permissions
+```hcl
+# terraform/environments/dev/main.tf
+provider "aws" {
+  region = "ap-south-1"  # Use region with proper permissions
+}
+```
+
+---
+
+## 📊 Monitoring & Observability
+
+### Pre-configured Grafana Dashboards
+- Kubernetes Cluster Overview
+- Node Exporter Full
+- Kubernetes Pod Metrics
+- Application Metrics (via Prometheus)
+
+### Prometheus Targets
+- kube-state-metrics
+- node-exporter
+- kubelet
+- apiserver
+- Microservices (via ServiceMonitor)
+
+### Alerting Rules
+- High CPU/Memory Usage
+- Pod CrashLooping
+- Node Not Ready
+- PVC Pending
+
+---
+
+## 🔒 Security Features
+
+- **IRSA** - Service accounts with IAM roles
+- **Network Policies** - Pod-level traffic control
+- **Pod Security Standards** - Restricted security context
+- **Secrets Encryption** - AWS Secrets Manager integration
+- **Private ECR** - Container images in private registry
+- **RBAC** - Role-based access control
+
+---
+
+## 🧹 Cleanup
+
+### Destroy All Resources
 ```bash
-# Check all pods are running
-kubectl get pods -A
+# Delete ArgoCD applications first
+kubectl delete -f argocd/apps/
+kubectl delete -f argocd/projects/
 
-# Check microservices
-kubectl get pods -n microservices
+# Delete ArgoCD
+kubectl delete namespace argocd
 
-# Check Helm releases
-helm list -A
+# Destroy Terraform infrastructure
+cd terraform/environments/dev
+terraform destroy -auto-approve
 ```
 
-### 9. Access Services
-
+### Delete EBS CSI Driver Role
 ```bash
-# Access microservices (separate terminals)
-kubectl port-forward -n microservices svc/user-service 8000:80
-kubectl port-forward -n microservices svc/order-service 8001:80
-kubectl port-forward -n microservices svc/product-service 8002:80
-
-# Access Grafana
-kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
-
-# Access Jenkins
-kubectl port-forward -n jenkins svc/jenkins 8080:8080
-
-# Access ArgoCD
-kubectl port-forward -n argocd svc/argocd-server 8443:443
+aws iam detach-role-policy --role-name eks-platform-dev-ebs-csi-driver \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+aws iam delete-role --role-name eks-platform-dev-ebs-csi-driver
 ```
 
-**Get Passwords (PowerShell):**
-```powershell
-# Grafana password
-kubectl get secret -n monitoring monitoring-grafana -o jsonpath="{.data.admin-password}" | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
+---
 
-# Jenkins password
-kubectl get secret -n jenkins jenkins -o jsonpath="{.data.jenkins-admin-password}" | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
+## 📈 Cost Optimization Tips
 
-# ArgoCD password
-kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
-```
+1. Use **Spot Instances** for non-critical workloads
+2. Enable **Cluster Autoscaler** to scale down during low usage
+3. Use **t3.medium** or smaller for dev environments
+4. Set **RDS** to single-AZ for dev
+5. Use **S3 Lifecycle Policies** to clean up old artifacts
 
-### 10. Test the APIs
-
-| Service | URL | Swagger Docs |
-|---------|-----|--------------|
-| User Service | http://localhost:8000/health | http://localhost:8000/docs |
-| Order Service | http://localhost:8001/health | http://localhost:8001/docs |
-| Product Service | http://localhost:8002/health | http://localhost:8002/docs |
-| Grafana | http://localhost:3000 | user: admin |
-| Jenkins | http://localhost:8080 | user: admin |
-| ArgoCD | https://localhost:8443 | user: admin |
-
-## 📦 Helm Charts
-
-This project uses Helm charts for all deployments:
-
-| Component | Chart Source | Values File |
-|-----------|--------------|-------------|
-| Microservices | `helm/charts/microservice` | `helm/values/{service}.yaml` |
-| Jenkins | `jenkins/jenkins` (official) | `helm/values/jenkins.yaml` |
-| Prometheus/Grafana | `kube-prometheus-stack` | `helm/values/monitoring.yaml` |
-| AWS LB Controller | `eks/aws-load-balancer-controller` | `helm/values/aws-load-balancer-controller.yaml` |
-| Cluster Autoscaler | `autoscaler/cluster-autoscaler` | `helm/values/cluster-autoscaler.yaml` |
-
-### Deploy/Rollback Microservices
-```bash
-# Deploy with specific image tag
-helm upgrade --install user-service helm/charts/microservice \
-    -n microservices -f helm/values/user-service.yaml \
-    --set image.tag=v1.2.3
-
-# Rollback to previous version
-helm rollback user-service -n microservices
-
-# Check release history
-helm history user-service -n microservices
-```
-
-## 📊 Monitoring Dashboards
-
-Grafana comes pre-configured with dashboards for:
-- Kubernetes cluster overview
-- Node metrics
-- Pod metrics
-- Application-specific metrics
-- AWS resources
-
-## 🔒 Security Considerations
-
-1. **Network Isolation**: All EKS nodes run in private subnets
-2. **IRSA**: Pods use IAM roles via service accounts (no static credentials)
-3. **Encryption**: Secrets encrypted at rest, TLS for all traffic
-4. **Network Policies**: Default deny with explicit allow rules
-5. **Image Scanning**: Trivy scans in CI pipeline
-
-## 📈 Autoscaling
-
-| Component | Type | Trigger |
-|-----------|------|---------|
-| EKS Nodes | Cluster Autoscaler | Pending pods |
-| Pods | HPA | CPU/Memory >70% |
-| RDS | Storage Autoscaling | >80% storage |
-
-## 💰 Cost Optimization
-
-- Spot instances for non-critical workloads
-- Right-sizing recommendations via metrics
-- Scheduled scaling for dev/staging
-- S3 lifecycle policies
-
-## 🧪 Testing
-
-```bash
-# Run infrastructure tests
-cd terraform
-terraform validate
-terraform plan
-
-# Run application tests
-cd apps/user-service
-npm test
-
-# Run integration tests
-./scripts/integration-test.sh
-```
-
-## 📝 Resume Bullet Point
-
-> "Designed and deployed a production-grade AWS EKS platform using Terraform and GitOps (ArgoCD), enabling automated CI/CD pipelines, multi-AZ high availability, HPA/Cluster Autoscaler for elastic scaling, and comprehensive observability with Prometheus/Grafana. Implemented IRSA for secure AWS service access and achieved 99.9% uptime SLA."
+---
 
 ## 🤝 Contributing
 
@@ -403,12 +489,42 @@ npm test
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+---
+
+## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📞 Contact
+---
 
-Your Name - your.email@example.com
+## 👤 Author
 
-Project Link: [https://github.com/AnishKini007/aws-eks-devops-platform](https://github.com/AnishKini007/aws-eks-devops-platform)
+**Anish Kini**
+- GitHub: [@AnishKini007](https://github.com/AnishKini007)
+
+---
+
+## 🙏 Acknowledgments
+
+- AWS EKS Documentation
+- Terraform AWS Provider
+- ArgoCD Project
+- Jenkins Helm Chart
+- kube-prometheus-stack
+
+---
+
+## 📝 Resume Highlights
+
+This project demonstrates proficiency in:
+
+| Category | Technologies |
+|----------|-------------|
+| **Cloud Infrastructure** | AWS VPC, EKS, RDS, S3, ECR, IAM, Secrets Manager, ELB |
+| **Infrastructure as Code** | Terraform modules, state management, multi-environment |
+| **Container Orchestration** | Kubernetes, Helm charts, HPA, Cluster Autoscaler, PDB |
+| **CI/CD** | Jenkins pipelines, ArgoCD GitOps, GitHub Actions |
+| **Observability** | Prometheus, Grafana, AlertManager, metrics collection |
+| **Security** | IRSA, Network Policies, RBAC, Secrets Management |
+| **Microservices** | Python FastAPI, REST APIs, Health checks |
+| **DevOps Practices** | GitOps, IaC, Automated deployments, Multi-AZ HA |
