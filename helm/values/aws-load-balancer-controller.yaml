@@ -1,0 +1,38 @@
+# AWS Load Balancer Controller Helm Values
+
+clusterName: eks-platform-dev
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::975050192962:role/eks-platform-dev-alb-controller
+
+replicaCount: 2
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Enable shield, waf, wafv2
+enableShield: false
+enableWaf: false
+enableWafv2: false
+
+# Ingress class
+ingressClass: alb
+createIngressClassResource: true
+
+# Region
+region: us-east-1
+
+# VPC ID - will be auto-detected if not set
+# vpcId: vpc-xxx
+
+# Pod disruption budget
+podDisruptionBudget:
+  maxUnavailable: 1

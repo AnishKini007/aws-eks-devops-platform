@@ -1,0 +1,38 @@
+# Order Service Helm Values
+
+nameOverride: "order-service"
+
+image:
+  repository: "975050192962.dkr.ecr.ap-south-1.amazonaws.com/eks-platform/order-service"
+  tag: "latest"
+
+service:
+  port: 80
+  targetPort: 8001
+
+env:
+  - name: PORT
+    value: "8001"
+  - name: ENVIRONMENT
+    value: "production"
+  - name: SERVICE_NAME
+    value: "order-service"
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8001"
+  prometheus.io/path: "/metrics"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70

@@ -1,0 +1,42 @@
+# Cluster Autoscaler Helm Values
+
+autoDiscovery:
+  clusterName: eks-platform-dev
+  enabled: true
+
+awsRegion: us-east-1
+
+rbac:
+  create: true
+  serviceAccount:
+    create: true
+    name: cluster-autoscaler
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::975050192962:role/eks-platform-dev-cluster-autoscaler
+
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 600Mi
+  requests:
+    cpu: 100m
+    memory: 600Mi
+
+extraArgs:
+  logtostderr: true
+  stderrthreshold: info
+  v: 4
+  skip-nodes-with-local-storage: false
+  expander: least-waste
+  balance-similar-node-groups: true
+  skip-nodes-with-system-pods: false
+
+podDisruptionBudget:
+  maxUnavailable: 1
+
+# Prometheus metrics
+serviceMonitor:
+  enabled: true
+  namespace: monitoring

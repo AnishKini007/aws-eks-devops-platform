@@ -1,0 +1,186 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-casc-config
+  namespace: jenkins
+data:
+  jenkins.yaml: |
+    jenkins:
+      systemMessage: "EKS Platform Jenkins - Configured with JCasC"
+      numExecutors: 0
+      mode: EXCLUSIVE
+      
+      securityRealm:
+        local:
+          allowsSignup: false
+          users:
+            - id: "admin"
+              name: "Admin"
+              password: "${JENKINS_ADMIN_PASSWORD:-admin123}"
+      
+      authorizationStrategy:
+        globalMatrix:
+          permissions:
+            - "Overall/Administer:admin"
+            - "Overall/Read:authenticated"
+      
+      clouds:
+        - kubernetes:
+            name: "kubernetes"
+            serverUrl: "https://kubernetes.default.svc"
+            namespace: "jenkins"
+            jenkinsUrl: "http://jenkins.jenkins.svc.cluster.local:8080/jenkins"
+            jenkinsTunnel: "jenkins-agent.jenkins.svc.cluster.local:50000"
+            containerCapStr: "100"
+            maxRequestsPerHostStr: "64"
+            retentionTimeout: 5
+            connectTimeout: 10
+            readTimeout: 20
+            templates:
+              - name: "python-agent"
+                label: "python"
+                nodeUsageMode: NORMAL
+                containers:
+                  - name: "python"
+                    image: "python:3.11-slim"
+                    command: "cat"
+                    ttyEnabled: true
+                    resourceRequestCpu: "200m"
+                    resourceRequestMemory: "256Mi"
+                    resourceLimitCpu: "1000m"
+                    resourceLimitMemory: "1Gi"
+                  - name: "jnlp"
+                    image: "jenkins/inbound-agent:latest"
+                    args: "^${computer.jnlpmac} ^${computer.name}"
+                    resourceRequestCpu: "100m"
+                    resourceRequestMemory: "256Mi"
+                yaml: |
+                  spec:
+                    serviceAccountName: jenkins
+              
+              - name: "docker-agent"
+                label: "docker"
+                nodeUsageMode: NORMAL
+                containers:
+                  - name: "docker"
+                    image: "docker:24-dind"
+                    privileged: true
+                    command: ""
+                    args: ""
+                    resourceRequestCpu: "500m"
+                    resourceRequestMemory: "512Mi"
+                  - name: "jnlp"
+                    image: "jenkins/inbound-agent:latest"
+                    args: "^${computer.jnlpmac} ^${computer.name}"
+                volumes:
+                  - hostPathVolume:
+                      hostPath: "/var/run/docker.sock"
+                      mountPath: "/var/run/docker.sock"
+              
+              - name: "terraform-agent"
+                label: "terraform"
+                nodeUsageMode: NORMAL
+                containers:
+                  - name: "terraform"
+                    image: "hashicorp/terraform:1.6"
+                    command: "cat"
+                    ttyEnabled: true
+                    resourceRequestCpu: "200m"
+                    resourceRequestMemory: "256Mi"
+                  - name: "jnlp"
+                    image: "jenkins/inbound-agent:latest"
+                    args: "^${computer.jnlpmac} ^${computer.name}"
+
+    credentials:
+      system:
+        domainCredentials:
+          - credentials:
+              - usernamePassword:
+                  id: "aws-credentials"
+                  username: "${AWS_ACCESS_KEY_ID}"
+                  password: "${AWS_SECRET_ACCESS_KEY}"
+                  description: "AWS Credentials"
+                  scope: GLOBAL
+              - string:
+                  id: "aws-account-id"
+                  secret: "${AWS_ACCOUNT_ID}"
+                  description: "AWS Account ID"
+                  scope: GLOBAL
+              - usernamePassword:
+                  id: "github-credentials"
+                  username: "${GITHUB_USERNAME}"
+                  password: "${GITHUB_TOKEN}"
+                  description: "GitHub Credentials"
+                  scope: GLOBAL
+
+    jobs:
+      - script: >
+          multibranchPipelineJob('microservices-ci') {
+            displayName('Microservices CI Pipeline')
+            description('CI pipeline for all microservices')
+            branchSources {
+              git {
+                id('microservices-ci')
+                remote('https://github.com/${GITHUB_USERNAME}/aws-eks-devops-platform.git')
+                credentialsId('github-credentials')
+              }
+            }
+            orphanedItemStrategy {
+              discardOldItems {
+                numToKeep(10)
+              }
+            }
+            triggers {
+              periodicFolderTrigger {
+                interval('5m')
+              }
+            }
+          }
+      
+      - script: >
+          pipelineJob('terraform-infrastructure') {
+            displayName('Terraform Infrastructure')
+            description('Deploy/manage AWS infrastructure')
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      url('https://github.com/${GITHUB_USERNAME}/aws-eks-devops-platform.git')
+                      credentials('github-credentials')
+                    }
+                    branches('*/main')
+                  }
+                }
+                scriptPath('jenkins/Jenkinsfile.terraform')
+              }
+            }
+            parameters {
+              choiceParam('ENVIRONMENT', ['dev', 'staging', 'prod'], 'Target environment')
+              choiceParam('ACTION', ['plan', 'apply', 'destroy'], 'Terraform action')
+              booleanParam('AUTO_APPROVE', false, 'Auto-approve (use with caution)')
+            }
+          }
+
+    unclassified:
+      location:
+        url: "http://jenkins.jenkins.svc.cluster.local:8080/jenkins/"
+        adminAddress: "admin@example.com"
+      
+      globalLibraries:
+        libraries:
+          - name: "pipeline-utils"
+            defaultVersion: "main"
+            retriever:
+              modernSCM:
+                scm:
+                  git:
+                    remote: "https://github.com/${GITHUB_USERNAME}/aws-eks-devops-platform.git"
+                    credentialsId: "github-credentials"
+                libraryPath: "jenkins/"
+
+    tool:
+      git:
+        installations:
+          - name: "Default"
+            home: "git"

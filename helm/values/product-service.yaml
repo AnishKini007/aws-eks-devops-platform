@@ -1,0 +1,38 @@
+# Product Service Helm Values
+
+nameOverride: "product-service"
+
+image:
+  repository: "975050192962.dkr.ecr.ap-south-1.amazonaws.com/eks-platform/product-service"
+  tag: "latest"
+
+service:
+  port: 80
+  targetPort: 8002
+
+env:
+  - name: PORT
+    value: "8002"
+  - name: ENVIRONMENT
+    value: "production"
+  - name: SERVICE_NAME
+    value: "product-service"
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8002"
+  prometheus.io/path: "/metrics"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70

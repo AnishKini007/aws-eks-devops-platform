@@ -1,0 +1,47 @@
+# User Service Helm Values
+# Overrides for the generic microservice chart
+
+nameOverride: "user-service"
+
+image:
+  repository: "975050192962.dkr.ecr.ap-south-1.amazonaws.com/eks-platform/user-service"
+  tag: "latest"
+
+service:
+  port: 80
+  targetPort: 8000
+
+env:
+  - name: PORT
+    value: "8000"
+  - name: ENVIRONMENT
+    value: "production"
+  - name: SERVICE_NAME
+    value: "user-service"
+
+serviceAccount:
+  annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::${AWS_ACCOUNT_ID}:role/user-service-role
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/metrics"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+ingress:
+  enabled: false  # Using shared ingress

@@ -1,0 +1,151 @@
+# Jenkins Helm Values
+# Using official Jenkins Helm chart: https://github.com/jenkinsci/helm-charts
+
+controller:
+  image: jenkins/jenkins
+  tag: lts-jdk17
+  
+  adminUser: admin
+  # adminPassword: set via --set or secrets
+  
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+  # Jenkins Configuration as Code
+  JCasC:
+    defaultConfig: true
+    configScripts:
+      welcome-message: |
+        jenkins:
+          systemMessage: "EKS Platform Jenkins - Managed by Helm"
+      
+      security: |
+        jenkins:
+          securityRealm:
+            local:
+              allowsSignup: false
+          authorizationStrategy:
+            globalMatrix:
+              permissions:
+                - "Overall/Administer:admin"
+                - "Overall/Read:authenticated"
+      
+      kubernetes-cloud: |
+        jenkins:
+          clouds:
+            - kubernetes:
+                name: "kubernetes"
+                serverUrl: "https://kubernetes.default.svc"
+                namespace: "jenkins"
+                jenkinsUrl: "http://jenkins.jenkins.svc.cluster.local:8080"
+                jenkinsTunnel: "jenkins-agent.jenkins.svc.cluster.local:50000"
+                containerCapStr: "100"
+                templates:
+                  - name: "python"
+                    label: "python"
+                    containers:
+                      - name: "python"
+                        image: "python:3.11-slim"
+                        command: "cat"
+                        ttyEnabled: true
+                      - name: "jnlp"
+                        image: "jenkins/inbound-agent:latest"
+                  - name: "docker"
+                    label: "docker"
+                    containers:
+                      - name: "docker"
+                        image: "docker:24-dind"
+                        privileged: true
+                      - name: "jnlp"
+                        image: "jenkins/inbound-agent:latest"
+                    volumes:
+                      - hostPathVolume:
+                          hostPath: "/var/run/docker.sock"
+                          mountPath: "/var/run/docker.sock"
+                  - name: "helm"
+                    label: "helm"
+                    containers:
+                      - name: "helm"
+                        image: "alpine/helm:latest"
+                        command: "cat"
+                        ttyEnabled: true
+                      - name: "jnlp"
+                        image: "jenkins/inbound-agent:latest"
+                  - name: "terraform"
+                    label: "terraform"
+                    containers:
+                      - name: "terraform"
+                        image: "hashicorp/terraform:1.6"
+                        command: "cat"
+                        ttyEnabled: true
+                      - name: "jnlp"
+                        image: "jenkins/inbound-agent:latest"
+
+  installPlugins:
+    - kubernetes:latest
+    - workflow-aggregator:latest
+    - git:latest
+    - configuration-as-code:latest
+    - job-dsl:latest
+    - docker-workflow:latest
+    - blueocean:latest
+    - prometheus:latest
+    - aws-credentials:latest
+    - pipeline-aws:latest
+    - github:latest
+    - github-branch-source:latest
+
+  # Ingress configuration
+  ingress:
+    enabled: true
+    apiVersion: networking.k8s.io/v1
+    ingressClassName: alb
+    annotations:
+      kubernetes.io/ingress.class: alb
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/healthcheck-path: /login
+    path: /
+
+  # Service configuration
+  serviceType: ClusterIP
+  servicePort: 8080
+
+# Agent configuration
+agent:
+  enabled: true
+  image: jenkins/inbound-agent
+  tag: latest
+  
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: gp2
+  size: 20Gi
+
+# Service account
+serviceAccount:
+  create: true
+  name: jenkins
+
+# RBAC
+rbac:
+  create: true
+  readSecrets: true
+
+# Prometheus metrics
+prometheus:
+  enabled: true

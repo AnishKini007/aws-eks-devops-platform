@@ -1,0 +1,228 @@
+// Jenkinsfile for Terraform Infrastructure Pipeline
+
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: terraform
+    image: hashicorp/terraform:1.6
+    command:
+    - cat
+    tty: true
+  - name: aws-cli
+    image: amazon/aws-cli:latest
+    command:
+    - cat
+    tty: true
+'''
+        }
+    }
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        TF_IN_AUTOMATION = 'true'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+        timeout(time: 60, unit: 'MINUTES')
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['dev', 'staging', 'prod'],
+            description: 'Target environment'
+        )
+        choice(
+            name: 'ACTION',
+            choices: ['plan', 'apply', 'destroy'],
+            description: 'Terraform action to perform'
+        )
+        booleanParam(
+            name: 'AUTO_APPROVE',
+            defaultValue: false,
+            description: 'Auto-approve terraform apply (use with caution!)'
+        )
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                container('terraform') {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'aws-credentials',
+                            usernameVariable: 'AWS_ACCESS_KEY_ID',
+                            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                        )
+                    ]) {
+                        dir("terraform/environments/${params.ENVIRONMENT}") {
+                            sh '''
+                                terraform init -input=false
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                container('terraform') {
+                    dir("terraform/environments/${params.ENVIRONMENT}") {
+                        sh '''
+                            terraform validate
+                            terraform fmt -check -recursive
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                container('terraform') {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'aws-credentials',
+                            usernameVariable: 'AWS_ACCESS_KEY_ID',
+                            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                        )
+                    ]) {
+                        dir("terraform/environments/${params.ENVIRONMENT}") {
+                            sh '''
+                                terraform plan -out=tfplan -input=false
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Manual Approval') {
+            when {
+                allOf {
+                    expression { params.ACTION == 'apply' || params.ACTION == 'destroy' }
+                    expression { !params.AUTO_APPROVE }
+                }
+            }
+            steps {
+                script {
+                    def action = params.ACTION
+                    def env = params.ENVIRONMENT
+                    
+                    // Show plan output
+                    container('terraform') {
+                        dir("terraform/environments/${params.ENVIRONMENT}") {
+                            sh 'terraform show tfplan'
+                        }
+                    }
+                    
+                    // Wait for manual approval
+                    timeout(time: 30, unit: 'MINUTES') {
+                        input(
+                            message: "Do you want to ${action} the infrastructure in ${env}?",
+                            ok: "Yes, ${action}!"
+                        )
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            when {
+                expression { params.ACTION == 'apply' }
+            }
+            steps {
+                container('terraform') {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'aws-credentials',
+                            usernameVariable: 'AWS_ACCESS_KEY_ID',
+                            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                        )
+                    ]) {
+                        dir("terraform/environments/${params.ENVIRONMENT}") {
+                            sh '''
+                                terraform apply -auto-approve tfplan
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Destroy') {
+            when {
+                expression { params.ACTION == 'destroy' }
+            }
+            steps {
+                container('terraform') {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'aws-credentials',
+                            usernameVariable: 'AWS_ACCESS_KEY_ID',
+                            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                        )
+                    ]) {
+                        dir("terraform/environments/${params.ENVIRONMENT}") {
+                            sh '''
+                                terraform destroy -auto-approve
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Output Values') {
+            when {
+                expression { params.ACTION == 'apply' }
+            }
+            steps {
+                container('terraform') {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'aws-credentials',
+                            usernameVariable: 'AWS_ACCESS_KEY_ID',
+                            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                        )
+                    ]) {
+                        dir("terraform/environments/${params.ENVIRONMENT}") {
+                            sh '''
+                                echo "========== Terraform Outputs =========="
+                                terraform output
+                                echo "======================================="
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo "Terraform ${params.ACTION} completed successfully!"
+        }
+        failure {
+            echo "Terraform ${params.ACTION} failed!"
+        }
+    }
+}
